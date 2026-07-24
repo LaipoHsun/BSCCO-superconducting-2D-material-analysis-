@@ -1,0 +1,60 @@
+# ── BSCCO analysis pipeline configuration ────────────────────────────────
+# Single source of truth for every tunable constant. No magic numbers in code.
+
+device: "BSCCO_hBN_s1"          # single hBN-encapsulated flake, zero-field dataset
+
+paths:
+  # Canonical cleaned input (already sweep-split & symmetry-cleaned upstream).
+  # We recompute R and treat destructive columns as advisory only.
+  cleaned_csv: "Processed_data/cleaned_iv_data/all_cleaned_iv.csv"
+  out_dir:     "pipeline/outputs"
+  tidy:        "pipeline/outputs/tidy_iv.parquet"
+  manifest:    "pipeline/outputs/manifest.csv"
+  metrics_dir: "pipeline/outputs/metrics"
+  figures_dir: "pipeline/outputs/figures"
+
+physics:
+  compliance_V: 0.4             # measurement voltage rail (V); |V|>=rail is not physical signal
+  current_step_mA: 0.001        # nominal source current resolution (limits Ic precision)
+
+qc:
+  noise_floor_V: 1.5e-4         # |V| below this is indistinguishable from baseline noise
+  rail_tol_V: 0.39              # |V| >= this is flagged rail_clipped
+  r_valid_min: 0.01             # plausible R window (ohms) for flagging, NOT for deletion
+  r_valid_max: 20.0
+
+ic:
+  v_threshold_V: 1.0e-3         # Ic := |I| where |V| first crosses this (interpolated)
+  v_threshold_scan: [3.0e-4, 5.0e-4, 1.0e-3, 2.0e-3, 5.0e-3]  # sensitivity sweep
+
+bkt:
+  # Power-law V ~ I^alpha is only fit inside a dissipative voltage window,
+  # and only reported where the fit is statistically acceptable.
+  window_V: [3.0e-4, 0.30]
+  min_points: 8
+  good_r2: 0.90
+  runs_p_min: 0.05              # residual-independence gate (runs test)
+  # Phase-2: alpha=3 crossing is window-sensitive; report the spread across these.
+  windows_scan:
+    - [1.0e-3, 3.0e-2]
+    - [1.0e-3, 1.0e-1]
+    - [3.0e-4, 3.0e-1]
+    - [1.0e-2, 3.0e-1]
+
+rt:
+  dir: "Processed_data/analysis_inputs/Pure_RT"
+  files:                       # current label -> filename
+    "316nA": "RT_I_316_nA_NTHU.xlsx"
+    "1uA":   "RT_I_1_uA_NTHU.xlsx"
+    "3.16uA": "RT_I_3.16_uA_NTHU.xlsx"
+    "10uA":  "RT_I_10_uA_NTHU.xlsx"
+  hn_fit_window_K: [86.0, 95.0]   # fit the rising BKT tail above the foot
+
+ic_scaling:
+  fit_branch: "switch_pos"
+  tc_guess_K: 88.0
+
+bootstrap:
+  n_resamples: 2000
+  ci: 0.95
+  seed: 20260724
