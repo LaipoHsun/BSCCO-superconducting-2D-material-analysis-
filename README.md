@@ -17,7 +17,7 @@ with Josephson energies E_J/k_B ~ 10³ K identifies the crossover as **self-heat
 (hot-spot) governed switching dynamics** giving way to overdamped flux flow — not
 capacitive or fluctuation-dominated behavior.
 
-![Concordance of four independent observables at T*](Report/paper/figures/fig4_concordance.png)
+![Concordance of four independent observables at T*](figures/fig4_concordance.png)
 
 A polarity-symmetric/antisymmetric decomposition proves the hysteresis is intrinsic
 (92% symmetric; implied inter-sweep thermal drift ≈ 0.2 K), and every quantity carries
