@@ -26,11 +26,7 @@ single-device limit that air-sensitive 2D superconductors impose.
 
 ## Manuscript
 
-The paper (REVTeX 4.2, PRB style) lives in [`Report/paper/`](Report/paper/):
-
-```bash
-cd Report/paper && latexmk -pdf main.tex
-```
+The paper (REVTeX 4.2, PRB style) lives in [`main.pdf`]:
 
 All four figures are regenerated from the data by the pipeline (below); nothing in the
 paper is hand-drawn.
