@@ -82,16 +82,14 @@ Key methodological points:
 ## Repository layout
 
 ```
-data/                      raw measurements only (never modified by code)
-  by_temperature/<T>/...     I–V sweeps, forward & reverse
-  Pure_RT/                   R–T at fixed bias
-data_process_code/         legacy cleaning notebooks (produce Processed_data/)
 Processed_data/            cleaned inputs read by the pipeline
   cleaned_iv_data/all_cleaned_iv.csv   ← canonical cleaned dataset
 pipeline/                  the analysis (see table above)
   config.yaml, run*.py, bscco/, tests/, outputs/
 analysis_code/             exploratory notebooks (superseded by pipeline/)
-Report/paper/              REVTeX manuscript + publication figures
+figures/                   the figures in the manuscript
+main.pdf                   REVTeX manuscript 
+Inspecting Supercon.. .pdf Presentation slide in summer
 ```
 
 Workflow rule inherited from the lab: `data/` is raw-only; code reads
