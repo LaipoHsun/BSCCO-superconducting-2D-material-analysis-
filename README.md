@@ -105,3 +105,9 @@ Workflow rule inherited from the lab: `data/` is raw-only; code reads
   pulsed I–V or on-chip thermometry is the decisive follow-up.
 - Before arXiv submission, fill the `%% TODO` items in `Report/paper/main.tex`
   (author romanization, affiliations, device geometry, repo URL).
+
+
+## Notes
+
+1. **This README was organized and written with the assistance of AI**, based on the study report and repository contents.
+2. **`raw_data/` is not published in this repository for privacy reasons** — If you need access to the raw data for research or replication purposes, please contact the authors by email with a brief description of your intended use.
