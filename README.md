@@ -264,23 +264,6 @@ residuals. (c) Synthetic validation of the drift decomposition.*
 
 ---
 
-## What this does not show
-
-- **$`T^*`$ is a crossover, not a phase transition.** With one device we cannot test
-  whether $`T^*/T_{\rm BKT} \simeq 0.55`$ is universal.
-- **The PCA locates no transition by itself.** Its change point moves between 27.5 and
-  77.5 K with the descriptor set. A model with an onset and an end point for the ramp
-  (segmented regression) is a natural next step, and should be judged by the same
-  leave-one-descriptor-out audit.
-- **No magnetic-field data.** The nonreciprocity, $`\lvert\eta\rvert = 6.2\%`$ at 50 K
-  (95% interval 4.2–8.2%, of which ≲ 1.5% could be instrumental drift), is reported as a
-  bounded observable, **not** as a superconducting diode effect.
-- **The thermal mechanism is consistent with the data, not proven.** The model check above
-  is in-sample.
-- **Resolution.** The 5 K temperature grid limits each peak location to $`\pm 2.5`$ K.
-
----
-
 ## Reproduce everything
 
 Requires Python ≥ 3.10.
