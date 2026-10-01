@@ -1,0 +1,9 @@
+# macOS Finder metadata
+.DS_Store
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Legacy exploratory notebooks (removed from the repo in 10f7c4c; superseded by pipeline/)
+analysis_code/

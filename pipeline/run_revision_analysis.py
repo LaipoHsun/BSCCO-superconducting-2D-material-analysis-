@@ -13,7 +13,7 @@ Addresses, quantitatively:
          conductance G(T) from measured (Ir, Vr), forward prediction of Ir/Ic;
          quantitative RCSJ comparison (implied capacitance / predicted Ir/Ic).
 
-Outputs -> pipeline/outputs/metrics/*.csv and Report/paper/figures/fig5,6.
+Outputs -> pipeline/outputs/metrics/*.csv and paths.paper_figures_dir/fig5,6.
 """
 from __future__ import annotations
 import sys
@@ -93,6 +93,29 @@ def joint_peak_bootstrap(per_scan_ic, per_scan_feat, n_boot, seed):
     return np.array(peaks), temps
 
 
+# ── F. descriptor-set sensitivity of the PCA change point ─────────────────
+DIMENSIONLESS = ["sharp_width", "sc_fraction", "foot_extent"]   # d3, d4, d5
+
+
+def tstar_for_features(per_scan_feat, feats, n_boot, seed):
+    """Change point of PC1(T) for a descriptor subset, with bootstrap over sweeps."""
+    def cp_of(table):
+        agg = table.groupby("T_K")[feats].mean().dropna().sort_index()
+        Z, *_ = shape.zscore(agg.to_numpy())
+        sc, comps, evr = shape.pca(Z, k=1)
+        cp = shape.change_points_1d(agg.index.to_numpy(), sc[:, 0], n_cp=1)
+        return (cp[0] if cp else np.nan), evr[0]
+    t0, evr = cp_of(per_scan_feat)
+    rng = np.random.default_rng(seed)
+    groups = [g.index.to_numpy() for _, g in per_scan_feat.groupby("T_K")]
+    boots = np.array([cp_of(per_scan_feat.loc[np.concatenate(
+        [rng.choice(ix, len(ix), replace=True) for ix in groups])])[0]
+        for _ in range(n_boot)])
+    return dict(T_star=t0, boot_median=np.nanmedian(boots),
+                boot_lo=np.nanquantile(boots, 0.16), boot_hi=np.nanquantile(boots, 0.84),
+                pc1_var=evr)
+
+
 # ── E. thermal power-balance calibration ──────────────────────────────────
 def thermal_calibration(tidy, per_scan_ic):
     agg = per_scan_ic.groupby(["T_K", "branch"])["Ic_mA"].mean().unstack("branch")
@@ -160,7 +183,8 @@ def main():
     cfg = load_config()
     root = cfg["_root"]
     mdir = root / cfg["paths"]["metrics_dir"]
-    fdir = root / "Report/paper/figures"
+    fdir = root / cfg["paths"]["paper_figures_dir"]
+    fdir.mkdir(parents=True, exist_ok=True)
     tidy = pd.read_parquet(root / cfg["paths"]["tidy"])
 
     ps_ic = metrics.per_scan_ic(tidy, cfg["ic"]["v_threshold_V"])
@@ -315,6 +339,22 @@ def main():
     Qneed = 4 / (np.pi * 0.93)
     Cneed = Qneed ** 2 * HBAR / (2 * E * Ic2 * Rd ** 2)
     print(f"  C needed to reproduce Ir/Ic=0.93: {Cneed*1e18:.2g} aF (unphysical)")
+
+    # ---------- F: descriptor-set sensitivity of T* ----------
+    print("\n=== F. T* vs descriptor set (bootstrap 68% over sweeps) ===")
+    sets = {"all six": shape.FEATURES, "dimensionless d3-d5": DIMENSIONLESS}
+    sets.update({f"drop {f}": [g for g in shape.FEATURES if g != f] for f in shape.FEATURES})
+    srows = []
+    for name, feats in sets.items():
+        r = tstar_for_features(ps_feat, feats, n_boot=300, seed=cfg["bootstrap"]["seed"])
+        r["descriptor_set"] = name
+        srows.append(r)
+        print(f"  {name:24s} T*={r['T_star']:5.1f} K  boot [{r['boot_lo']:.1f}, "
+              f"{r['boot_hi']:.1f}]  PC1 var={r['pc1_var']*100:.0f}%")
+    sdf = pd.DataFrame(srows)[["descriptor_set", "T_star", "boot_median", "boot_lo",
+                               "boot_hi", "pc1_var"]]
+    sdf.to_csv(mdir / "tstar_descriptor_sensitivity.csv", index=False)
+    print(f"  range of T* over descriptor sets: {sdf.T_star.min():.1f}-{sdf.T_star.max():.1f} K")
 
     # ---------- figures ----------
     fig, ax = plt.subplots(1, 3, figsize=(7.0, 2.35))

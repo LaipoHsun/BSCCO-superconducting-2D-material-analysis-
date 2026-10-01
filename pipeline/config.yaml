@@ -12,6 +12,7 @@ paths:
   manifest:    "pipeline/outputs/manifest.csv"
   metrics_dir: "pipeline/outputs/metrics"
   figures_dir: "pipeline/outputs/figures"
+  paper_figures_dir: "figures"   # publication figures (fig1-fig6), regenerated in place
 
 physics:
   compliance_V: 0.4             # measurement voltage rail (V); |V|>=rail is not physical signal

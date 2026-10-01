@@ -1,7 +1,7 @@
 """Publication-quality figures for the manuscript (PRB / arXiv style).
 
 Regenerates the four main-text figures as vector PDFs (+PNG previews) in
-Report/paper/figures/. Style: serif/STIX, inward ticks, no titles (captions
+paths.paper_figures_dir (config.yaml). Style: serif/STIX, inward ticks, no titles (captions
 carry the information), panel labels inside the axes.
 
 Usage: python pipeline/run_paper_figures.py   (after the analysis phases have run)
@@ -258,7 +258,7 @@ def bootstrap_tstar(tidy, cfg, n_boot=300):
 def main():
     cfg = load_config()
     root = cfg["_root"]
-    fdir = root / "Report/paper/figures"
+    fdir = root / cfg["paths"]["paper_figures_dir"]
     fdir.mkdir(parents=True, exist_ok=True)
     tidy = pd.read_parquet(root / cfg["paths"]["tidy"])
     mdir = root / cfg["paths"]["metrics_dir"]

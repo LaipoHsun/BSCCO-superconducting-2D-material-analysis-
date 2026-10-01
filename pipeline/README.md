@@ -80,7 +80,11 @@ so no fragile absolute voltage threshold enters. Then PCA + change-point:
   lineshape is governed by one latent transport coordinate. (Hard k-means is deliberately NOT
   used — on a 1-D manifold there are no discrete clusters; the elbow confirms it. It's a
   *continuous crossover*, not sharp phases.)
-* PC1(T) has a **bootstrap-stable change-point at T\* ≈ 48 K [38, 48] (68%)** ≈ 0.55 Tc.
+* With all six descriptors, PC1(T) has a change point at 47.5 K [37.5, 47.5] (68% bootstrap).
+  **Caveat:** the leave-one-descriptor-out audit in `run_revision_analysis.py` (section F,
+  `tstar_descriptor_sensitivity.csv`) moves it between 27.5 and 77.5 K. PC1(T) has a ramp
+  (~20–55 K) plus a second feature near T_BKT, so a single change point is misspecified.
+  T\* is therefore taken from the current-based observables (45–50 K), not from PCA.
 * Independent raw descriptors (switch softening, foot onset, dissipative fraction, departure
   from the rail) all turn on together across T\* — concordance across observables is the
   argument against a measurement glitch.
@@ -101,23 +105,28 @@ power balance; non-monotonic hysteresis; BSCCO's low thermal conductivity).
 
 ## Phase 4 — concordance & paper assembly (`run_phase4_concordance.py`)
 
-Master figure `phase4_concordance.png`: four independent observables — |dI_c/dT|,
-hysteresis 1−I_r/I_c, nonreciprocity |η|, lineshape change-rate — all peak at
-**T\* ≈ 48–50 K ≈ 0.55 T_c**, plus the I_r/I_c minimum and a proposed regime map. Narrative,
-key-numbers table, section structure and honest limitations in
-[`Report/paper/outline.md`](../Report/paper/outline.md).
+Master figure `phase4_concordance.png`: four independently constructed observables —
+|dI_c/dT|, hysteresis 1−I_r/I_c, nonreciprocity |η|, lineshape change-rate — all peak at
+**T\* ≈ 45–50 K ≈ 0.55 T_BKT**, plus the I_r/I_c minimum and a proposed regime map. They
+are not statistically independent (several share I_c); their correlations and per-peak
+uncertainties are computed by `run_revision_analysis.py`.
+
+## Robustness suite (`run_revision_analysis.py`)
+
+Joint bootstrap of all four peak locations, observable correlation matrix, V_th
+sensitivity of the I_r/I_c minimum, Halperin–Nelson fit-window systematics, synthetic
+validation of the drift decomposition, thermal power-balance calibration, and the
+quantitative RCSJ comparison. Writes `outputs/metrics/*.csv` and `figures/fig5,fig6`.
 
 ## Full run order
 
 ```bash
-python pipeline/run.py               # tidy + QC + Phase-0 metrics
-python pipeline/run_phase12.py       # Ic(T) scaling, Halperin-Nelson, BKT window test
-python pipeline/run_phase3_regimes.py    # threshold-free lineshape PCA, T*
-python pipeline/run_phase3b_confound.py  # hysteresis intrinsic-vs-drift test
-python pipeline/run_phase4_concordance.py  # master concordance figure + table
+python pipeline/run.py                    # tidy + QC + Phase-0 metrics
+python pipeline/run_phase12.py            # Ic(T) scaling, Halperin-Nelson, BKT window test
+python pipeline/run_phase3_regimes.py     # threshold-free lineshape PCA, T*
+python pipeline/run_phase3b_confound.py   # hysteresis intrinsic-vs-drift test
+python pipeline/run_phase4_concordance.py # concordance table + overview figure
+python pipeline/run_revision_analysis.py  # robustness suite + thermal model (fig5, fig6)
+python pipeline/run_paper_figures.py      # publication figures fig1-fig4
+python pipeline/tests/test_metrics.py     # synthetic-data unit tests
 ```
-
-## Next (new chat, per user: switch model → LaTeX manuscript + README + arXiv)
-
-Turn `Report/paper/outline.md` + the figures into a LaTeX (revtex4-2) manuscript and a
-GitHub README; prepare the arXiv submission.
