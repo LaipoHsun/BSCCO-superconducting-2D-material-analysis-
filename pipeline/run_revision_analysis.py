@@ -362,7 +362,7 @@ def main():
     for (vth, r), c in zip(vcurves.items(), cols):
         ax[0].plot(r.index, r.values, "o-", ms=2.5, color=c,
                    label=f"{vth*1e3:g} mV")
-    ax[0].axvspan(38, 48, color="#f5c542", alpha=.22, lw=0)
+    ax[0].axvspan(42.5, 52.5, color="#f5c542", alpha=.22, lw=0)   # T* band (observables)
     ax[0].set(xlabel=r"$T$ (K)", ylabel=r"$I_r/I_c$")
     ax[0].legend(title=r"$V_{\mathrm{th}}$", fontsize=6.5, title_fontsize=7)
     ax[0].text(0.03, 0.94, "(a)", transform=ax[0].transAxes, fontweight="bold",

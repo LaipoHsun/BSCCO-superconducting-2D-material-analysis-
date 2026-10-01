@@ -19,7 +19,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from bscco import load_config, metrics  # noqa: E402
 
 TC = 86.7           # Tc from Halperin-Nelson (Phase 2)
-TSTAR = (48.0, 38.0, 48.0)   # median, lo, hi (Phase 3)
+# T* band from the current-based observables (peaks at 45 and 50 K, +/- half grid step).
+# The PCA change point is descriptor-dependent and is not used for T*.
+TSTAR = (47.5, 42.5, 52.5)   # mid, lo, hi
 
 
 def _norm(s):
@@ -63,12 +65,10 @@ def main() -> None:
         i = s[col].idxmax() if kind == "max" else s[col].idxmin()
         return s.loc[i, "T_K"]
     print(f"Tc (Halperin-Nelson)          : {TC:.1f} K")
-    print(f"T* (lineshape PC1 change-pt)  : {TSTAR[0]:.0f} K  [{TSTAR[1]:.0f}, {TSTAR[2]:.0f}]")
     print(f"hysteresis (1-Ir/Ic) maximum  : {peakT('hyst'):.0f} K")
     print(f"Ir/Ic minimum                 : {peakT('IrIc','min'):.0f} K  (={C['IrIc'].min():.2f})")
     print(f"nonreciprocity |eta| maximum  : {peakT('eta_switch') if C['eta_switch'].notna().any() else float('nan'):.0f} K")
-    print(f"flux-flow foot onset (max d/dT ~) near T*")
-    print(f"T*/Tc = {TSTAR[0]/TC:.2f}")
+    print(f"T* band (observables)         : {TSTAR[1]:.1f}-{TSTAR[2]:.1f} K,  T*/Tc = {TSTAR[0]/TC:.2f}")
 
     _master_figure(C, fdir)
     print(f"\nWrote -> {mdir/'concordance_table.csv'} and {fdir/'phase4_concordance.png'}")
@@ -118,12 +118,11 @@ def _master_figure(C, fdir):
     ax_c.plot(T, _norm(C["hyst"]), "s-", label="hysteresis $1-I_r/I_c$")
     if C["eta_switch"].notna().any():
         ax_c.plot(T, _norm(np.abs(C["eta_switch"])), "^-", label="nonreciprocity |η|")
-    ax_c.plot(T, _norm(dPC1dT), "o-", label="lineshape change-rate |dPC1/dT|")
-    ax_c.text(TSTAR[0], 1.03, f"T* = {TSTAR[0]:.0f} K", color="darkorange",
-              ha="center", fontsize=9)
+    ax_c.plot(T, _norm(dPC1dT), "o--", alpha=.5, label="lineshape change-rate |dPC1/dT| (ref.)")
+    ax_c.text(TSTAR[0], 1.03, "T*", color="darkorange", ha="center", fontsize=9)
     ax_c.text(TC, 1.03, f"$T_c$ = {TC:.0f} K", color="firebrick", ha="center", fontsize=9)
     ax_c.set(xlabel="T (K)", ylabel="normalised (0–1)",
-             title="(c) four independent observables peak together at T*", ylim=(-0.05, 1.15))
+             title="(c) three current-based observables peak together at T*", ylim=(-0.05, 1.15))
     ax_c.legend(fontsize=8, ncol=2, loc="upper right")
 
     # (d) regime map bar

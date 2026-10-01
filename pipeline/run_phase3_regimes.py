@@ -1,10 +1,10 @@
-"""Phase 3: objective, threshold-free discovery of transport regimes.
+"""Phase 3: threshold-free lineshape analysis.
 
-Describe each up-leg I-V branch by self-normalised shape features, then use PCA +
-k-means to find how the device's transport organises with temperature, and a
-change-point search to locate the crossover T*. This is a POSITIVE, descriptive
-result (the device's own transport reorganises into regimes) that does not rely on
-any single fragile threshold.
+Describe each up-leg I-V branch by six threshold-free shape features, then use PCA to
+find how the device's transport organises with temperature, and a single change-point
+search on PC1(T). The change point is a diagnostic only: run_revision_analysis.py
+(section F) shows it moves between 27.5 and 77.5 K with the descriptor set, so T* is
+taken from the current-based observables instead.
 
 Usage: python pipeline/run_phase3_regimes.py   (after run.py builds tidy_iv.parquet)
 """
@@ -84,9 +84,9 @@ def main() -> None:
     for f, w in sorted(zip(shape.FEATURES, comps[0]), key=lambda t: -abs(t[1])):
         print(f"    {f:12s} {w:+.2f}")
     print(f"\nPC1(T) change-points: {[round(c,1) for c in cps]} K")
-    print(f"crossover T* (bootstrap median, 68% CI): "
+    print(f"PC1 change point, all six descriptors (bootstrap median, 68% CI): "
           f"{tstar[0]:.1f} K  [{tstar[1]:.1f}, {tstar[2]:.1f}]  (n_boot={len(boots)})")
-    print(f"T*/Tc  ≈ {tstar[0]/86.7:.2f}   (Tc=86.7 K from HN fit)")
+    print("  note: descriptor-dependent (27.5-77.5 K); see run_revision_analysis.py section F")
 
     _figure(agg, comps, evr, boots, cps, tstar, fdir)
     print(f"\nWrote -> {mdir/'regimes.csv'} and {fdir/'phase3_regimes.png'}")
@@ -110,10 +110,11 @@ def _figure(agg, comps, evr, boots, cps, tstar, fdir):
     ax[0, 1].plot(a["T_K"], a["PC1"], "o-", color="slateblue")
     if np.isfinite(tstar[0]):
         ax[0, 1].axvspan(tstar[1], tstar[2], color="gold", alpha=.3,
-                         label=f"T* = {tstar[0]:.0f} K  [{tstar[1]:.0f}, {tstar[2]:.0f}] (68%)")
+                         label=f"change point {tstar[0]:.0f} K  [{tstar[1]:.0f}, {tstar[2]:.0f}] (68%)")
         ax[0, 1].axvline(tstar[0], color="darkorange", lw=1.5)
     ax[0, 1].set(xlabel="T (K)", ylabel="PC1 (transport-shape coordinate)",
-                 title="(b) shape coordinate has an objective crossover at T*")
+                 title="(b) PC1(T) change point, all six descriptors\n"
+                       "(descriptor-dependent; not used as T*)")
     ax[0, 1].legend(fontsize=9)
 
     # (c) concordance: independent raw descriptors all inflect near T*
@@ -127,7 +128,7 @@ def _figure(agg, comps, evr, boots, cps, tstar, fdir):
     if np.isfinite(tstar[0]):
         ax[1, 0].axvspan(tstar[1], tstar[2], color="gold", alpha=.3)
     ax[1, 0].set(xlabel="T (K)", ylabel="normalised feature (0–1)",
-                 title="(c) concordance: independent descriptors turn on together")
+                 title="(c) raw descriptors vs T")
     ax[1, 0].legend(fontsize=8)
 
     # (d) bootstrap distribution of T*
@@ -135,8 +136,8 @@ def _figure(agg, comps, evr, boots, cps, tstar, fdir):
         ax[1, 1].hist(boots, bins=np.arange(0, 90, 5), color="teal", alpha=.75,
                       edgecolor="k")
         ax[1, 1].axvline(tstar[0], color="darkorange", lw=2, label=f"median {tstar[0]:.0f} K")
-    ax[1, 1].set(xlabel="bootstrap change-point T* (K)", ylabel="count",
-                 title="(d) T* is bootstrap-stable (300 resamples)")
+    ax[1, 1].set(xlabel="bootstrap change point (K)", ylabel="count",
+                 title="(d) bootstrap over sweeps (sampling noise only)")
     ax[1, 1].legend(fontsize=9)
 
     fig.tight_layout()

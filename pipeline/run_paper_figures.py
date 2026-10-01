@@ -16,10 +16,14 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from bscco import load_config, shape  # noqa: E402
+from bscco import load_config  # noqa: E402
 
 TC = 86.7
-TSTAR = (48.0, 38.0, 48.0)
+# T* band: peaks of the three current-based observables (45 K and 50 K) widened by
+# half a temperature-grid step on each side. The PCA change point is NOT used for T*
+# because it depends on the descriptor set (see tstar_descriptor_sensitivity.csv).
+TSTAR_LO, TSTAR_HI = 42.5, 52.5
+TSTAR_MID = 0.5 * (TSTAR_LO + TSTAR_HI)
 
 plt.rcParams.update({
     "font.family": "serif",
@@ -48,7 +52,7 @@ def panel_label(ax, s, x=0.03, y=0.94):
 
 
 def tstar_band(ax, label=False):
-    ax.axvspan(TSTAR[1], TSTAR[2], color="#f5c542", alpha=0.22, lw=0, zorder=0)
+    ax.axvspan(TSTAR_LO, TSTAR_HI, color="#f5c542", alpha=0.22, lw=0, zorder=0)
     if label:
         ax.axvline(TC, color="#8b1a1a", ls=(0, (4, 2)), lw=0.9, zorder=0)
 
@@ -142,7 +146,7 @@ def fig2(C, fdir):
     ax[1].axhline(1, color="gray", ls=":", lw=0.8)
     ax[1].annotate(f"min {C.IrIc.min():.2f}", (C.loc[imin, 'T_K'] + 3, C.IrIc.min()),
                    fontsize=8, va="center")
-    ax[1].text(TSTAR[0] - 5, 0.99, r"$T^{*}$", color="#b8860b", fontsize=9, ha="right")
+    ax[1].text(TSTAR_MID, 1.01, r"$T^{*}$", color="#b8860b", fontsize=9, ha="center")
     ax[1].text(TC + 1, 0.78, r"$T_{\mathrm{BKT}}$", color="#8b1a1a", fontsize=8, rotation=90)
     ax[1].set(xlabel=r"$T$ (K)", ylabel=r"$I_r/I_c$", xlim=(0, 92), ylim=(0.70, 1.04))
     panel_label(ax[1], "(b)")
@@ -150,9 +154,22 @@ def fig2(C, fdir):
     save(fig, "fig2_envelope", fdir)
 
 
-# ── Fig 3: lineshape PCA + T* ─────────────────────────────────────────────
-def fig3(reg, boots, fdir):
-    fig, ax = plt.subplots(1, 2, figsize=(DOUBLE, 2.6))
+# ── Fig 3: lineshape PCA + descriptor audit ──────────────────────────────
+SET_LABELS = {
+    "all six": "all six",
+    "dimensionless d3-d5": r"$d_3$–$d_5$ only",
+    "drop I_switch": r"no $d_1$",
+    "drop Vmax_frac": r"no $d_2$",
+    "drop sharp_width": r"no $d_3$",
+    "drop sc_fraction": r"no $d_4$",
+    "drop foot_extent": r"no $d_5$",
+    "drop dR_top": r"no $d_6$",
+}
+
+
+def fig3(reg, sens, fdir):
+    fig, ax = plt.subplots(1, 3, figsize=(DOUBLE, 2.5),
+                           gridspec_kw=dict(width_ratios=[1.2, 1.0, 0.9]))
 
     sc = ax[0].scatter(reg.PC1, reg.PC2, c=reg.T_K, cmap="viridis", s=34,
                        edgecolor="k", linewidth=0.4)
@@ -162,7 +179,8 @@ def fig3(reg, boots, fdir):
                            xytext=(4, 3), textcoords="offset points")
     ax[0].annotate("110 K", (reg.loc[reg.T_K == 110, "PC1"].iloc[0],
                              reg.loc[reg.T_K == 110, "PC2"].iloc[0]),
-                   fontsize=7, xytext=(-26, -9), textcoords="offset points")
+                   fontsize=7, xytext=(-26, 16), textcoords="offset points",
+                   arrowprops=dict(arrowstyle="-", lw=0.5, color="0.35"))
     cb = plt.colorbar(sc, ax=ax[0], pad=0.02)
     cb.set_label(r"$T$ (K)", fontsize=8)
     cb.ax.tick_params(labelsize=7)
@@ -172,21 +190,26 @@ def fig3(reg, boots, fdir):
     a = reg.sort_values("T_K")
     tstar_band(ax[1], label=True)
     ax[1].plot(a.T_K, a.PC1, "o-", color="#3c5488")
-    ax[1].text(TSTAR[0], 2.35, r"$T^{*}=48$ K", color="#b8860b", ha="center", fontsize=8.5)
+    ax[1].text(TSTAR_MID, 2.35, r"$T^{*}$", color="#b8860b", ha="center", fontsize=9)
     ax[1].text(TC + 1, -1.9, r"$T_{\mathrm{BKT}}$", color="#8b1a1a", fontsize=8, rotation=90)
     ax[1].set(xlabel=r"$T$ (K)", ylabel="PC1 (lineshape coordinate)", ylim=(-2.6, 2.75))
     panel_label(ax[1], "(b)")
 
-    # inset: bootstrap distribution of T* (upper-left region is data-free)
-    ins = ax[1].inset_axes([0.075, 0.63, 0.32, 0.30])
-    ins.hist(boots, bins=np.arange(25, 60, 3.4), color="#6aa1c8", edgecolor="k", lw=0.4)
-    ins.axvline(np.median(boots), color="#b8860b", lw=1.2)
-    ins.set_xlabel(r"bootstrap $T^{*}$ (K)", fontsize=6.5, labelpad=1.5)
-    ins.set_yticks([])
-    ins.tick_params(labelsize=6)
-    ins.patch.set_alpha(1.0)
+    # (c) change point of PC1(T) for each descriptor set, 68% bootstrap bars
+    s = sens.set_index("descriptor_set").loc[list(SET_LABELS)]
+    y = np.arange(len(s))[::-1]
+    lo = np.clip(s.T_star - s.boot_lo, 0, None)
+    hi = np.clip(s.boot_hi - s.T_star, 0, None)
+    tstar_band(ax[2], label=True)
+    ax[2].errorbar(s.T_star, y, xerr=[lo, hi], fmt="o", color="#3c5488",
+                   ecolor="#7f8fb8", capsize=2, ms=4)
+    ax[2].set_yticks(y)
+    ax[2].set_yticklabels([SET_LABELS[k] for k in s.index], fontsize=7.5)
+    ax[2].tick_params(axis="y", right=False)
+    ax[2].set(xlabel=r"PC1 change point (K)", xlim=(15, 92), ylim=(-0.7, len(s) - 0.3))
+    panel_label(ax[2], "(c)", x=0.05, y=0.10)
 
-    fig.tight_layout(w_pad=1.6)
+    fig.tight_layout(w_pad=1.2)
     save(fig, "fig3_pca", fdir)
 
 
@@ -224,8 +247,9 @@ def fig4(C, conf, asym, fdir):
     ax[1].plot(T, norm(dIcdT), "v-", color="#4477aa", label=r"$|dI_c/dT|$")
     ax[1].plot(T, norm(1 - C.IrIc), "s-", color="#ee8833", label=r"$1-I_r/I_c$")
     ax[1].plot(T, norm(eta), "^-", color="#228833", label=r"$|\eta|$")
-    ax[1].plot(T, norm(dPC1), "o-", color="#aa3377", label=r"$|d\,\mathrm{PC1}/dT|$")
-    ax[1].text(TSTAR[0], 1.05, r"$T^{*}$", color="#b8860b", ha="center", fontsize=9)
+    ax[1].plot(T, norm(dPC1), "o--", color="#aa3377", alpha=0.55, ms=2.8,
+               label=r"$|d\,\mathrm{PC1}/dT|$ (ref.)")
+    ax[1].text(TSTAR_MID, 1.05, r"$T^{*}$", color="#b8860b", ha="center", fontsize=9)
     ax[1].text(TC + 1.5, 1.02, r"$T_{\mathrm{BKT}}$", color="#8b1a1a", fontsize=8,
                rotation=90, va="top")
     ax[1].set(xlabel=r"$T$ (K)", ylabel="normalised", xlim=(0, 112), ylim=(-0.05, 1.18))
@@ -235,24 +259,6 @@ def fig4(C, conf, asym, fdir):
 
     fig.tight_layout(w_pad=1.6)
     save(fig, "fig4_concordance", fdir)
-
-
-def bootstrap_tstar(tidy, cfg, n_boot=300):
-    per_scan, _ = shape.feature_table(tidy)
-    rng = np.random.default_rng(cfg["bootstrap"]["seed"])
-    groups = {T: g.index.to_numpy() for T, g in per_scan.groupby("T_K")}
-    boots = []
-    for _ in range(n_boot):
-        idx = np.concatenate([rng.choice(ix, len(ix), replace=True) for ix in groups.values()])
-        ab = per_scan.loc[idx].groupby("T_K")[shape.FEATURES].mean().dropna().sort_values("T_K")
-        if len(ab) < 6:
-            continue
-        Zb, *_ = shape.zscore(ab[shape.FEATURES].to_numpy())
-        sb, *_ = shape.pca(Zb, k=1)
-        cp = shape.change_points_1d(ab.index.to_numpy(), sb[:, 0], n_cp=1)
-        if cp:
-            boots.append(cp[0])
-    return np.array(boots)
 
 
 def main():
@@ -266,14 +272,12 @@ def main():
     reg = pd.read_csv(mdir / "regimes.csv")
     conf = pd.read_csv(mdir / "hysteresis_confound.csv")
     asym = pd.read_csv(mdir / "asymmetries.csv")
-
-    boots = bootstrap_tstar(tidy, cfg)
-    print(f"T* bootstrap: median={np.median(boots):.1f}  "
-          f"68% CI=[{np.quantile(boots,0.16):.1f},{np.quantile(boots,0.84):.1f}]  n={len(boots)}")
+    # written by run_revision_analysis.py (section F); run that script first
+    sens = pd.read_csv(mdir / "tstar_descriptor_sensitivity.csv")
 
     fig1(tidy, cfg, root, fdir)
     fig2(C, fdir)
-    fig3(reg, boots, fdir)
+    fig3(reg, sens, fdir)
     fig4(C, conf, asym, fdir)
 
 

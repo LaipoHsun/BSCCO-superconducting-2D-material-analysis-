@@ -108,8 +108,8 @@ would impose sharp boundaries on what is a continuous evolution.
 
 **Audit: the change point depends on the descriptor set.** With all six descriptors, the
 change point of $`\mathrm{PC1}(T)`$ is 47.5 K with a 68% bootstrap interval of
-$`[37.5, 47.5]`$ K (Fig. 3b). Repeating the analysis with each descriptor left out moves it
-substantially:
+$`[37.5, 47.5]`$ K. Repeating the analysis with each descriptor left out moves it
+substantially (panel c above):
 
 | Descriptor set | Change point | 68% bootstrap |
 |---|---|---|
@@ -118,12 +118,15 @@ substantially:
 | drop $`d_1`$ ($`I_{50}`$) | 27.5 K | 27.5–32.5 K |
 | drop $`d_2`$ or $`d_6`$ | 52.5 K | 52.5–52.5 K |
 | drop $`d_5`$ | 47.5 K | 42.5–47.5 K |
-| drop $`d_3`$ or $`d_4`$ | 77.5 K | up to 27.5–77.5 K |
+| drop $`d_4`$ | 77.5 K | 77.5–77.5 K |
+| drop $`d_3`$ | 77.5 K | 27.5–77.5 K |
 
-Each bootstrap interval is narrow, so the spread comes from the analysis choice, not from
-noise. The cause is visible in Fig. 3b: $`\mathrm{PC1}(T)`$ has a ramp from ~20 to 55 K
-*and* a second feature near $`T_{\rm BKT}`$. A model with a single change point is
-misspecified for that shape, and small reweightings decide which feature it picks. We
+Seven of the eight bootstrap intervals are at most 10 K wide, so the spread comes from the
+analysis choice, not from noise. The cause is visible in panel (b) above:
+$`\mathrm{PC1}(T)`$ has a ramp from ~20 to 55 K *and* a second feature near
+$`T_{\rm BKT}`$. A model with a single change point is misspecified for that shape, and
+small reweightings decide which feature it picks. Without $`d_3`$ the choice is so close
+that the bootstrap itself flips between the two features. We
 therefore use the PCA for two things it does robustly: showing that the lineshape evolves
 along one coordinate, and that it reorganizes over the same intermediate-temperature range
 where the current-based observables below peak. **We do not use the PCA change point as an
@@ -343,10 +346,15 @@ Stage-by-stage notes: [`pipeline/README.md`](pipeline/README.md).
 ```
 
 The pipeline starts from the cleaned I–V data in `Processed_data/`. Raw instrument files
-are not included here. The upstream cleaning steps (sweep splitting, monotonicity and
-symmetry/continuity filters) are documented in
+are not published here (see Notes). The upstream cleaning steps (sweep splitting,
+monotonicity and symmetry/continuity filters) are documented in
 [`Processed_data/cleaning_notes.md`](Processed_data/cleaning_notes.md).
 
 ## Author
 
 Po-Hsun Lai, Department of Physics, National Taiwan University. PI: Wei-Hua Wang.
+
+## Notes
+
+1. **This README was organized and written with the assistance of AI**, based on the study report and repository contents.
+2. **`raw_data/` is not published in this repository for privacy reasons** — If you need access to the raw data for research or replication purposes, please contact the authors by email with a brief description of your intended use.
